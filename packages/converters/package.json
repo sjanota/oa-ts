@@ -1,5 +1,5 @@
 {
-  "name": "@karo/io-ts-openapi",
+  "name": "@karo/converters",
   "version": "0.0.1",
   "type": "commonjs"
 }

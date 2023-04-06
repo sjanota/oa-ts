@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@karo/io-ts-openapi": ["packages/io-ts-openapi/src/index.ts"]
+      "@karo/arbitrary": ["packages/arbitrary/src/index.ts"],
+      "@karo/converters": ["packages/converters/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

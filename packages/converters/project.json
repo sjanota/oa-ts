@@ -1,31 +1,31 @@
 {
-  "name": "io-ts-openapi",
+  "name": "converters",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/io-ts-openapi/src",
+  "sourceRoot": "packages/converters/src",
   "projectType": "library",
   "targets": {
     "build": {
       "executor": "@nrwl/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/packages/io-ts-openapi",
-        "main": "packages/io-ts-openapi/src/index.ts",
-        "tsConfig": "packages/io-ts-openapi/tsconfig.lib.json",
-        "assets": ["packages/io-ts-openapi/*.md"]
+        "outputPath": "dist/packages/converters",
+        "main": "packages/converters/src/index.ts",
+        "tsConfig": "packages/converters/tsconfig.lib.json",
+        "assets": ["packages/converters/*.md"]
       }
     },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["packages/io-ts-openapi/**/*.ts"]
+        "lintFilePatterns": ["packages/converters/**/*.ts"]
       }
     },
     "test": {
       "executor": "@nrwl/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "packages/io-ts-openapi/jest.config.ts",
+        "jestConfig": "packages/converters/jest.config.ts",
         "passWithNoTests": true
       },
       "configurations": {
