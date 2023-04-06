@@ -1,6 +1,5 @@
-import { number } from 'fp-ts';
-import { identity, pipe } from 'fp-ts/lib/function';
-import { Predicate } from 'fp-ts/lib/Predicate';
+import { array } from 'fp-ts';
+import { pipe } from 'fp-ts/lib/function';
 import * as io from 'io-ts';
 import { OpenAPIV3_1 as openapi } from 'openapi-types';
 import { ge, gte, le, lte, maximum, minimum } from './common';
@@ -16,6 +15,8 @@ type ToIoTs<Schema extends openapi.SchemaObject> =
     ? io.NumberC
     : Schema['type'] extends 'boolean'
     ? io.BooleanC
+    : Schema extends openapi.ArraySchemaObject
+    ? io.ArrayC<ToIoTs<Schema['items']>>
     : io.Any;
 
 const applyMinimum: Pipe<number> =
@@ -36,17 +37,35 @@ const convertString: Converter = () => io.string;
 const convertNumber: Converter = (schema) =>
   pipe(io.number, applyMinimum(schema), applyMaximum(schema));
 const convertBoolean: Converter = () => io.boolean;
+const convertArray = (schema: openapi.ArraySchemaObject) =>
+  io.array(ioTsOpenapi(schema.items));
+
+const convertObject: Converter = (schema) =>
+  io.partial(
+    pipe(
+      schema.properties ?? {},
+      Object.entries,
+      array.map(([k, v]) => [k, convert(v)]),
+      Object.fromEntries
+    )
+  );
+
+const convert = (schema: openapi.SchemaObject) => {
+  switch (schema.type) {
+    case 'string':
+      return convertString(schema);
+    case 'number':
+      return convertNumber(schema);
+    case 'boolean':
+      return convertBoolean(schema);
+    case 'array':
+      return convertArray(schema);
+    case 'object':
+      return convertObject(schema);
+  }
+  throw new Error(`cannot convert type ${schema.type} to Codec`);
+};
 
 export const ioTsOpenapi = <Schema extends openapi.SchemaObject>(
   schema: Schema
-): ToIoTs<Schema> => {
-  switch (schema.type) {
-    case 'string':
-      return convertString(schema) as ToIoTs<Schema>;
-    case 'number':
-      return convertNumber(schema) as ToIoTs<Schema>;
-    case 'boolean':
-      return convertBoolean(schema) as ToIoTs<Schema>;
-  }
-  throw new Error();
-};
+): ToIoTs<Schema> => convert(schema) as ToIoTs<Schema>;

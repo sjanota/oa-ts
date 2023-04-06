@@ -11,6 +11,7 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "fast-check": "^3.8.0",
     "@nrwl/eslint-plugin-nx": "15.9.2",
     "@nrwl/jest": "15.9.2",
     "@nrwl/js": "15.9.2",

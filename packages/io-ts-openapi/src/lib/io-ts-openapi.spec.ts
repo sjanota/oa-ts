@@ -5,6 +5,7 @@ import * as io from 'io-ts';
 import { ioTsOpenapi } from './io-ts-openapi';
 import { fcOpenapi } from './fc-openapi';
 import { OpenAPIV3_1 as openapi } from 'openapi-types';
+import { Arbitrary } from 'fast-check';
 
 const fcNonNumber = fc.anything().filter((x) => typeof x !== 'number');
 
@@ -14,12 +15,6 @@ it('correctly types string', () => {
   const failure: io.TypeOf<typeof codec> = 123;
   const success: io.TypeOf<typeof stringCodec> = '123';
 });
-
-const fcType = fc.oneof(
-  fc.constant('string' as const),
-  fc.constant('number' as const),
-  fc.constant('boolean' as const)
-);
 
 type Range = Pick<
   openapi.SchemaObject,
@@ -49,10 +44,47 @@ const fcRange = fc
           }
   );
 
-const fcSchemaObject = fc.tuple(fcType, fcRange).map(([type, range]) => ({
-  type,
-  ...range,
-}));
+const fcNumberSchema = fcRange.map(
+  (range): openapi.SchemaObject => ({
+    type: 'number',
+    ...range,
+  })
+);
+
+const fcStringSchema = fc.constant<openapi.SchemaObject>({
+  type: 'string' as const,
+});
+
+const fcBooleanSchema = fc.constant<openapi.SchemaObject>({
+  type: 'boolean' as const,
+});
+
+const fcSchemaObject = fc.letrec<{
+  properties: string[];
+  array: openapi.ArraySchemaObject;
+  object: openapi.SchemaObject;
+  schema: openapi.SchemaObject;
+}>((tie) => ({
+  properties: fc.array(fc.string()),
+  array: fc.record({
+    type: fc.constant('array' as const),
+    items: tie('schema'),
+  }),
+  object: fc.record({
+    type: fc.constant('object' as const),
+    properties: fc.dictionary(
+      tie('properties').chain(fc.constantFrom),
+      tie('schema')
+    ),
+  }),
+  schema: fc.oneof(
+    fcNumberSchema,
+    fcBooleanSchema,
+    fcStringSchema,
+    tie('array'),
+    tie('object')
+  ),
+})).schema;
 
 const fcSchemaWithValue = fcSchemaObject.chain((schemaObject) =>
   fc.tuple(fc.constant(schemaObject), fcOpenapi(schemaObject))

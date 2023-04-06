@@ -1,15 +1,18 @@
-import { identity, pipe } from 'fp-ts/lib/function';
-import { Predicate } from 'fp-ts/lib/Predicate';
-import * as io from 'io-ts';
+import fc, { Arbitrary } from 'fast-check';
+import { array } from 'fp-ts';
+import { pipe } from 'fp-ts/lib/function';
 import { OpenAPIV3_1 as openapi } from 'openapi-types';
-import fc from 'fast-check';
-import { isNumber } from 'fp-ts/lib/number';
-import { isBoolean } from 'fp-ts/lib/boolean';
 import { maximum, minimum } from './common';
 
 type Converter<T> = (schema: openapi.SchemaObject) => fc.Arbitrary<T>;
 type Pipe<T> = (schema: openapi.SchemaObject) => PipeFC<T>;
 type PipeFC<T> = (c: fc.Arbitrary<T>) => fc.Arbitrary<T>;
+
+type ToFcObject<Schema extends openapi.SchemaObject> = fc.Arbitrary<{
+  [k in keyof Schema['properties']]: Schema['properties'][k] extends openapi.SchemaObject
+    ? ToFC<Schema['properties'][k]>
+    : never;
+}>;
 
 type ToFC<Schema extends openapi.SchemaObject> = Schema['type'] extends 'string'
   ? fc.Arbitrary<string>
@@ -17,6 +20,10 @@ type ToFC<Schema extends openapi.SchemaObject> = Schema['type'] extends 'string'
   ? fc.Arbitrary<number>
   : Schema['type'] extends 'boolean'
   ? fc.Arbitrary<boolean>
+  : Schema extends openapi.ArraySchemaObject
+  ? fc.Arbitrary<Array<ToFC<Schema['items']>>>
+  : Schema['type'] extends 'object'
+  ? ToFcObject<Schema>
   : never;
 
 const applyExclusiveMaximum: Pipe<number> = (schema) => (a) =>
@@ -38,16 +45,38 @@ const convertNumber: Converter<number> = (schema) =>
   );
 const convertBoolean: Converter<boolean> = fc.boolean;
 
-export const fcOpenapi = <Schema extends openapi.SchemaObject>(
-  schema: Schema
-): ToFC<Schema> => {
+const convertArray = (
+  schema: openapi.ArraySchemaObject
+): Arbitrary<unknown[]> => fc.array<unknown>(fcOpenapi(schema.items));
+
+const convertObject = (schema: openapi.SchemaObject): Arbitrary<unknown> =>
+  schema.properties
+    ? fc.record<unknown>(
+        pipe(
+          schema.properties,
+          Object.entries,
+          array.map(([k, v]) => [k, convert(v)]),
+          Object.fromEntries
+        )
+      )
+    : fc.object();
+
+const convert: Converter<unknown> = (schema) => {
   switch (schema.type) {
     case 'string':
-      return convertString(schema) as ToFC<Schema>;
+      return convertString(schema);
     case 'number':
-      return convertNumber(schema) as ToFC<Schema>;
+      return convertNumber(schema);
     case 'boolean':
-      return convertBoolean(schema) as ToFC<Schema>;
+      return convertBoolean(schema);
+    case 'array':
+      return convertArray(schema);
+    case 'object':
+      return convertObject(schema);
   }
-  throw new Error();
+  throw new Error(`cannot convert type ${schema.type} to Arbitrary`);
 };
+
+export const fcOpenapi = <Schema extends openapi.SchemaObject>(
+  schema: Schema
+): ToFC<Schema> => convert(schema) as ToFC<Schema>;
