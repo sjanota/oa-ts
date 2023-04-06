@@ -17,6 +17,12 @@ type ToIoTs<Schema extends openapi.SchemaObject> =
     ? io.BooleanC
     : Schema extends openapi.ArraySchemaObject
     ? io.ArrayC<ToIoTs<Schema['items']>>
+    : Schema['type'] extends 'object'
+    ? io.PartialC<{
+        [k in keyof Schema['properties']]: Schema['properties'][k] extends openapi.SchemaObject
+          ? ToIoTs<Schema['properties'][k]>
+          : never;
+      }>
     : io.Any;
 
 const applyMinimum: Pipe<number> =
