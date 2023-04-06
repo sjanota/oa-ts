@@ -47,7 +47,7 @@ const convertBoolean: Converter<boolean> = fc.boolean;
 
 const convertArray = (
   schema: openapi.ArraySchemaObject
-): Arbitrary<unknown[]> => fc.array<unknown>(fcOpenapi(schema.items));
+): Arbitrary<unknown[]> => fc.array<unknown>(convert(schema.items));
 
 const convertObject = (schema: openapi.SchemaObject): Arbitrary<unknown> =>
   schema.properties
@@ -77,6 +77,6 @@ const convert: Converter<unknown> = (schema) => {
   throw new Error(`cannot convert type ${schema.type} to Arbitrary`);
 };
 
-export const fcOpenapi = <Schema extends openapi.SchemaObject>(
+export const schemaObjectToArbitrary = <Schema extends openapi.SchemaObject>(
   schema: Schema
 ): ToFC<Schema> => convert(schema) as ToFC<Schema>;

@@ -38,7 +38,7 @@ const convertNumber: Converter = (schema) =>
   pipe(io.number, applyMinimum(schema), applyMaximum(schema));
 const convertBoolean: Converter = () => io.boolean;
 const convertArray = (schema: openapi.ArraySchemaObject) =>
-  io.array(ioTsOpenapi(schema.items));
+  io.array(convert(schema.items));
 
 const convertObject: Converter = (schema) =>
   io.partial(
@@ -50,7 +50,7 @@ const convertObject: Converter = (schema) =>
     )
   );
 
-const convert = (schema: openapi.SchemaObject) => {
+const convert = (schema: openapi.SchemaObject): io.Any => {
   switch (schema.type) {
     case 'string':
       return convertString(schema);
@@ -66,6 +66,6 @@ const convert = (schema: openapi.SchemaObject) => {
   throw new Error(`cannot convert type ${schema.type} to Codec`);
 };
 
-export const ioTsOpenapi = <Schema extends openapi.SchemaObject>(
+export const schemaObjectToCodec = <Schema extends openapi.SchemaObject>(
   schema: Schema
 ): ToIoTs<Schema> => convert(schema) as ToIoTs<Schema>;
