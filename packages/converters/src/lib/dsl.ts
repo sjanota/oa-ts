@@ -9,5 +9,23 @@ export const operation: <
   o: O
 ) => O & { operationId: Id } = (operationId, o) => ({ ...o, operationId });
 
-export const openApi: <O extends DeepReadonly<openapi.Document>>(o: O) => O =
+export const openApi: <D extends DeepReadonly<openapi.Document>>(o: D) => D =
   identity;
+
+export const paths: <P extends DeepReadonly<openapi.PathsObject>>(p: P) => P =
+  identity;
+
+export const components: <P extends DeepReadonly<openapi.ComponentsObject>>(
+  p: P
+) => P = identity;
+
+export const schema: <S extends DeepReadonly<openapi.SchemaObject>>(s: S) => S =
+  identity;
+
+export const schemasRef: <
+  C extends DeepReadonly<openapi.ComponentsObject>['schemas']
+>() => <Name extends keyof C & string = keyof C & string>(
+  name: Name
+) => { $ref: `#/components/schemas/${Name}` } = () => (name) => ({
+  $ref: `#/components/schemas/${name}`,
+});
