@@ -8,7 +8,7 @@ type Converter = (schema: openapi.SchemaObject) => io.Any;
 type Pipe<T> = (schema: openapi.SchemaObject) => PipeCodec<T>;
 type PipeCodec<T> = <C extends io.Type<T>>(c: C) => io.Any;
 
-type ToIoTs<Schema extends openapi.SchemaObject> =
+export type SchemaObjectToCodec<Schema extends openapi.SchemaObject> =
   Schema['type'] extends 'string'
     ? io.StringC
     : Schema['type'] extends 'number'
@@ -16,11 +16,11 @@ type ToIoTs<Schema extends openapi.SchemaObject> =
     : Schema['type'] extends 'boolean'
     ? io.BooleanC
     : Schema extends openapi.ArraySchemaObject
-    ? io.ArrayC<ToIoTs<Schema['items']>>
+    ? io.ArrayC<SchemaObjectToCodec<Schema['items']>>
     : Schema['type'] extends 'object'
     ? io.PartialC<{
         [k in keyof Schema['properties']]: Schema['properties'][k] extends openapi.SchemaObject
-          ? ToIoTs<Schema['properties'][k]>
+          ? SchemaObjectToCodec<Schema['properties'][k]>
           : never;
       }>
     : io.Any;
@@ -74,4 +74,5 @@ const convert = (schema: openapi.SchemaObject): io.Any => {
 
 export const schemaObjectToCodec = <Schema extends openapi.SchemaObject>(
   schema: Schema
-): ToIoTs<Schema> => convert(schema) as ToIoTs<Schema>;
+): SchemaObjectToCodec<Schema> =>
+  convert(schema) as SchemaObjectToCodec<Schema>;

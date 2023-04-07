@@ -1,12 +1,5 @@
-import { io } from './common';
+import { Equal, Expect, io } from './common';
 import { schemaObjectToCodec } from './schema-object-io-ts';
-
-export type Expect<T extends true> = T;
-export type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <
-  T
->() => T extends Y ? 1 : 2
-  ? true
-  : false;
 
 test('type number', () => {
   const schema = { type: 'number' } as const;
