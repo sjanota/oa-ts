@@ -15,8 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@karo/arbitrary": ["packages/arbitrary/src/index.ts"],
-      "@karo/converters": ["packages/converters/src/index.ts"]
+      "@oa-ts/arbitrary": ["packages/arbitrary/src/index.ts"],
+      "@oa-ts/converters": ["packages/converters/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

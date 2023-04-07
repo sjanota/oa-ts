@@ -1,4 +1,4 @@
-import { fcSchemaObject } from '@karo/arbitrary';
+import { fcSchemaObject } from '@oa-ts/arbitrary';
 import { either } from 'fp-ts';
 import { schemaObjectToArbitrary } from './schema-object-arbitrary';
 import { schemaObjectToCodec } from './schema-object-io-ts';
