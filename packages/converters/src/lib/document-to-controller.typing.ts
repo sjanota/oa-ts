@@ -1,3 +1,5 @@
+import { Task } from 'fp-ts/lib/Task';
+import { Equal, Expect } from './common';
 import { ToController } from './document-to-controller';
 import { openApi } from './dsl';
 
@@ -20,6 +22,10 @@ const doc = openApi({
           200: {
             $ref: '#/components/responses/UserByIdOK',
           },
+          404: {
+            summary: 'User not found',
+            $ref: '#/components/responses/Error',
+          },
         },
       },
     },
@@ -32,6 +38,21 @@ const doc = openApi({
           'application/json': {
             schema: {
               $ref: '#/components/schemas/Response',
+            },
+          },
+        },
+      },
+      Error: {
+        description: 'Error message',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                error: {
+                  type: 'string',
+                },
+              },
             },
           },
         },
@@ -60,6 +81,18 @@ const doc = openApi({
 
 declare const controller: ToController<typeof doc>;
 
-const _valid = controller.getUserById({ id: 123 });
-// @ts-expect-error controler expects number
-const _invalid = controller.getUserById({ id: '123' });
+type _Test = Expect<
+  Equal<
+    (typeof controller)['getUserById'],
+    (args: { readonly id: number }) => Task<
+      | {
+          code: 200;
+          body: { readonly name?: string | undefined };
+        }
+      | {
+          code: 404;
+          body: { readonly error?: string | undefined };
+        }
+    >
+  >
+>;
