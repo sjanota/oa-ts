@@ -1,5 +1,5 @@
 import { Task } from 'fp-ts/lib/Task';
-import { Equal, Expect } from './common';
+import { Equal, Expect } from '@oa-ts/common';
 import { ToController } from './document-to-controller';
 import { doc, Error, Id, User } from './example-schema';
 

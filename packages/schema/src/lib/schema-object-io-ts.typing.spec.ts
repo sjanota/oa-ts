@@ -1,4 +1,4 @@
-import { Equal, Expect, io } from './common';
+import { Equal, Expect, io } from '@oa-ts/common';
 import { schemaObjectToCodec } from './schema-object-io-ts';
 
 test('type number', () => {

@@ -1,4 +1,4 @@
-import { DeepReadonly, openapi } from './common';
+import { DeepReadonly, openapi } from '@oa-ts/common';
 import { OperationObject, ToHandler } from './operation-object-to-handler';
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
@@ -32,3 +32,7 @@ type ControllerFromFlattenedPaths<Doc, Operations> = PickAndFlatten<{
 
 export type ToController<Doc extends DeepReadonly<openapi.Document>> =
   ControllerFromFlattenedPaths<Doc, FlattenedPaths<Doc>>;
+
+export declare const toController: <Doc extends DeepReadonly<openapi.Document>>(
+  d: Doc
+) => ToController<Doc>;

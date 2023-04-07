@@ -16,7 +16,9 @@
     "baseUrl": ".",
     "paths": {
       "@oa-ts/arbitrary": ["packages/arbitrary/src/index.ts"],
-      "@oa-ts/converters": ["packages/converters/src/index.ts"]
+      "@oa-ts/common": ["packages/common/src/index.ts"],
+      "@oa-ts/controller": ["packages/controller/src/index.ts"],
+      "@oa-ts/schema": ["packages/schema/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

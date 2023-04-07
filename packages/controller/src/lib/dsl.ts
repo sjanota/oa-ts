@@ -1,5 +1,5 @@
 import { identity } from 'fp-ts/lib/function';
-import { DeepReadonly, openapi } from './common';
+import { DeepReadonly, openapi } from '@oa-ts/common';
 
 export const operation: <
   Id extends string,

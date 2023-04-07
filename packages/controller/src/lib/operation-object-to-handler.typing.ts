@@ -1,4 +1,4 @@
-import { Equal, Expect } from './common';
+import { Equal, Expect } from '@oa-ts/common';
 import { operation } from './dsl';
 import { Handler, HandlerResponse } from './handler';
 import { ToHandler } from './operation-object-to-handler';

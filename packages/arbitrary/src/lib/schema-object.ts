@@ -1,4 +1,4 @@
-import { fc } from '@fast-check/jest';
+import * as fc from 'fast-check';
 import { OpenAPIV3_1 as openapi } from 'openapi-types';
 
 type Range = Pick<

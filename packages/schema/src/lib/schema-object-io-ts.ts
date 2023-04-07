@@ -2,7 +2,15 @@ import { array } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/function';
 import * as io from 'io-ts';
 import { OpenAPIV3_1 as openapi } from 'openapi-types';
-import { ge, gte, le, lte, maximum, minimum, ResolveReference } from './common';
+import {
+  ge,
+  gte,
+  le,
+  lte,
+  maximum,
+  minimum,
+  ResolveReference,
+} from '@oa-ts/common';
 
 type Converter = (schema: openapi.SchemaObject) => io.Any;
 type Pipe<T> = (schema: openapi.SchemaObject) => PipeCodec<T>;
