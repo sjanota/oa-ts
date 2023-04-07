@@ -2,7 +2,7 @@ import { DeepReadonly, io, openapi } from './common';
 import { HandlerFn, HandlerResponse } from './handler';
 import { SchemaObjectToCodec } from './schema-object-io-ts';
 
-type OperationObject = openapi.OperationObject & {
+export type OperationObject = openapi.OperationObject & {
   operationId: NonNullable<openapi.OperationObject['operationId']>;
   responses: NonNullable<openapi.OperationObject['responses']>;
 };
