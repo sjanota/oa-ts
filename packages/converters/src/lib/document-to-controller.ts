@@ -24,11 +24,11 @@ type FlattenedPaths<Doc extends DeepReadonly<openapi.Document>> =
     ? PickAndFlatten<PathsWithPrefixedMethods<Doc['paths']>>
     : never;
 
-type ControllerFromFlattenedPaths<Operations> = PickAndFlatten<{
+type ControllerFromFlattenedPaths<Doc, Operations> = PickAndFlatten<{
   [k in keyof Operations]: Operations[k] extends DeepReadonly<OperationObject>
-    ? ToHandler<Operations[k]>
+    ? ToHandler<Operations[k], Doc>
     : 'dupa';
 }>;
 
 export type ToController<Doc extends DeepReadonly<openapi.Document>> =
-  ControllerFromFlattenedPaths<FlattenedPaths<Doc>>;
+  ControllerFromFlattenedPaths<Doc, FlattenedPaths<Doc>>;

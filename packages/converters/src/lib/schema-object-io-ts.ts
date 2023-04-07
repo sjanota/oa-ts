@@ -2,28 +2,41 @@ import { array } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/function';
 import * as io from 'io-ts';
 import { OpenAPIV3_1 as openapi } from 'openapi-types';
-import { ge, gte, le, lte, maximum, minimum } from './common';
+import { ge, gte, le, lte, maximum, minimum, ResolveReference } from './common';
 
 type Converter = (schema: openapi.SchemaObject) => io.Any;
 type Pipe<T> = (schema: openapi.SchemaObject) => PipeCodec<T>;
 type PipeCodec<T> = <C extends io.Type<T>>(c: C) => io.Any;
 
-export type SchemaObjectToCodec<Schema extends openapi.SchemaObject> =
-  Schema['type'] extends 'string'
-    ? io.StringC
-    : Schema['type'] extends 'number'
-    ? io.NumberC
-    : Schema['type'] extends 'boolean'
-    ? io.BooleanC
-    : Schema extends openapi.ArraySchemaObject
-    ? io.ArrayC<SchemaObjectToCodec<Schema['items']>>
-    : Schema['type'] extends 'object'
-    ? io.PartialC<{
-        [k in keyof Schema['properties']]: Schema['properties'][k] extends openapi.SchemaObject
-          ? SchemaObjectToCodec<Schema['properties'][k]>
-          : never;
-      }>
-    : io.Any;
+export type SchemaOrReference = openapi.SchemaObject | openapi.ReferenceObject;
+
+type SchemaObjectToCodec<
+  Doc,
+  Schema extends openapi.SchemaObject
+> = Schema['type'] extends 'string'
+  ? io.StringC
+  : Schema['type'] extends 'number'
+  ? io.NumberC
+  : Schema['type'] extends 'boolean'
+  ? io.BooleanC
+  : Schema extends openapi.ArraySchemaObject
+  ? io.ArrayC<SchemaToCodec<Schema['items'], Doc>>
+  : Schema['type'] extends 'object'
+  ? io.PartialC<{
+      [k in keyof Schema['properties']]: Schema['properties'][k] extends openapi.SchemaObject
+        ? SchemaToCodec<Schema['properties'][k], Doc>
+        : never;
+    }>
+  : io.Any;
+
+export type SchemaToCodec<
+  Schema,
+  Doc = Record<string, never>
+> = Schema extends openapi.ReferenceObject
+  ? SchemaToCodec<ResolveReference<Doc, Schema>, Doc>
+  : Schema extends openapi.SchemaObject
+  ? SchemaObjectToCodec<Doc, Schema>
+  : never;
 
 const applyMinimum: Pipe<number> =
   (schema: openapi.SchemaObject) => (codec) => {
@@ -74,5 +87,4 @@ const convert = (schema: openapi.SchemaObject): io.Any => {
 
 export const schemaObjectToCodec = <Schema extends openapi.SchemaObject>(
   schema: Schema
-): SchemaObjectToCodec<Schema> =>
-  convert(schema) as SchemaObjectToCodec<Schema>;
+): SchemaToCodec<Schema> => convert(schema) as SchemaToCodec<Schema>;

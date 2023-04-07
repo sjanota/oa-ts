@@ -1,6 +1,9 @@
+import { io, ResolveRef, SplitRef } from './common';
 import { ToController } from './document-to-controller';
+import { openApi } from './dsl';
+import { SchemaToCodec } from './schema-object-io-ts';
 
-const doc = {
+const doc = openApi({
   openapi: '3.1.0',
   info: {
     title: 'test',
@@ -10,17 +13,18 @@ const doc = {
     '/api/users/:id': {
       get: {
         operationId: 'getUserById',
-        parameters: [{ name: 'id', in: 'path', schema: { type: 'number' } }],
+        parameters: [
+          {
+            $ref: '#/components/parameters/PathId',
+          },
+        ],
         responses: {
           200: {
             description: 'aaaa',
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                  },
+                  $ref: '#/components/schemas/Response',
                 },
               },
             },
@@ -29,8 +33,27 @@ const doc = {
       },
     },
   },
-  components: {},
-} as const;
+  components: {
+    parameters: {
+      PathId: {
+        name: 'id',
+        in: 'path',
+        schema: { $ref: '#/components/schemas/Id' },
+      },
+    },
+    schemas: {
+      Response: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+        },
+      },
+      Id: {
+        type: 'number',
+      },
+    },
+  },
+} as const);
 
 declare const controller: ToController<typeof doc>;
 
