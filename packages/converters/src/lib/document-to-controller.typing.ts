@@ -1,7 +1,5 @@
-import { io, ResolveRef, SplitRef } from './common';
 import { ToController } from './document-to-controller';
 import { openApi } from './dsl';
-import { SchemaToCodec } from './schema-object-io-ts';
 
 const doc = openApi({
   openapi: '3.1.0',
@@ -20,20 +18,25 @@ const doc = openApi({
         ],
         responses: {
           200: {
-            description: 'aaaa',
-            content: {
-              'application/json': {
-                schema: {
-                  $ref: '#/components/schemas/Response',
-                },
-              },
-            },
+            $ref: '#/components/responses/UserByIdOK',
           },
         },
       },
     },
   },
   components: {
+    responses: {
+      UserByIdOK: {
+        description: 'aaaa',
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/Response',
+            },
+          },
+        },
+      },
+    },
     parameters: {
       PathId: {
         name: 'id',
