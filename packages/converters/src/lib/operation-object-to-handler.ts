@@ -24,34 +24,33 @@ type ToHandlerResponse<Code, Rsp> = Rsp extends openapi.ResponseObject
     }[keyof Rsp['content']]
   : never;
 
-type ToHandlerResponses<Path extends DeepReadonly<OperationObject>> = {
-  [k in keyof Path['responses']]: ToHandlerResponse<k, Path['responses'][k]>;
-}[keyof Path['responses']];
+type ToHandlerResponses<Operation extends DeepReadonly<OperationObject>> = {
+  [k in keyof Operation['responses']]: ToHandlerResponse<
+    k,
+    Operation['responses'][k]
+  >;
+}[keyof Operation['responses']];
 
-type ToHandlerArgSchema<T> = T extends openapi.ParameterObject
-  ? ToSchema<T['schema']>
+type ToHandlerArgSchema<Parameter> = Parameter extends openapi.ParameterObject
+  ? ToSchema<Parameter['schema']>
   : 'expected ParameterObject';
 
-type ToHandlerArgName<T> = T extends openapi.ParameterObject
-  ? T['name']
+type ToHandlerArgName<Parameter> = Parameter extends openapi.ParameterObject
+  ? Parameter['name']
   : never;
 
-type ToHandlerArgs<Path extends DeepReadonly<OperationObject>> = [
-  Path['parameters']
-] extends [undefined]
-  ? Record<string, never>
-  : {
-      [k in keyof Path['parameters'] as ToHandlerArgName<
-        Path['parameters'][k]
-      >]: ToHandlerArgSchema<Path['parameters'][k]>;
-    };
+type ToHandlerArgs<Operation extends DeepReadonly<OperationObject>> = {
+  [k in keyof Operation['parameters'] as ToHandlerArgName<
+    Operation['parameters'][k]
+  >]: ToHandlerArgSchema<Operation['parameters'][k]>;
+};
 
-type ToHandlerFn<Path extends DeepReadonly<OperationObject>> = HandlerFn<
-  ToHandlerArgs<Path>,
-  ToHandlerResponses<Path>
+type ToHandlerFn<Operation extends DeepReadonly<OperationObject>> = HandlerFn<
+  ToHandlerArgs<Operation>,
+  ToHandlerResponses<Operation>
 >;
 
-export type ToHandler<Path extends DeepReadonly<OperationObject>> = Record<
-  Path['operationId'],
-  ToHandlerFn<Path>
+export type ToHandler<Operation extends DeepReadonly<OperationObject>> = Record<
+  Operation['operationId'],
+  ToHandlerFn<Operation>
 >;
