@@ -80,3 +80,5 @@ export type ToHandler<
   Operation extends DeepReadonly<OperationObject>,
   Doc = Record<string, never>
 > = Record<Operation['operationId'], ToHandlerFn<Doc, Operation>>;
+
+export declare const pathCoded: <Doc>()
