@@ -4,6 +4,7 @@ import { pipe } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
 import { Task } from 'fp-ts/lib/Task';
 import { match } from 'path-to-regexp';
+import { operation } from './dsl';
 import { OperationObject, ToHandler } from './operation-object-to-handler';
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
@@ -59,11 +60,16 @@ const matchMethod: (
 ) => Option<DeepReadonly<openapi.OperationObject>> = (req) => (pathItem) =>
   option.fromNullable(pathItem[req.method]);
 
-declare const handle: (
+const handle: (
   req: HttpRequest
 ) => <Doc extends DeepReadonly<openapi.Document>>(
   controller: Controller<Doc>
-) => (operation: DeepReadonly<openapi.OperationObject>) => Task<HttpResponse>;
+) => (operation: DeepReadonly<openapi.OperationObject>) => Task<HttpResponse> =
+  (_req) => (controller) => (operation) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    return controller[operation.operationId ?? '']({});
+  };
 
 export const router: <Doc extends DeepReadonly<openapi.Document>>(
   doc: Doc

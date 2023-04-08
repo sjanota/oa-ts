@@ -22,6 +22,7 @@ const User = dsl.schema({
   type: 'object',
   properties: {
     name: { type: 'string' },
+    id: { type: 'number' },
   },
 } as const);
 

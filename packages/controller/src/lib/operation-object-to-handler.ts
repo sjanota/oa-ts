@@ -1,6 +1,13 @@
 import { DeepReadonly, io, openapi, ResolveReference } from '@oa-ts/common';
+import {
+  schemaObjectToCodec,
+  SchemaOrReference,
+  SchemaToCodec,
+} from '@oa-ts/schema';
+import { array, either, option } from 'fp-ts';
+import { Either } from 'fp-ts/lib/Either';
+import { flow, pipe } from 'fp-ts/lib/function';
 import { HandlerFn, HandlerResponse } from './handler';
-import { SchemaOrReference, SchemaToCodec } from '@oa-ts/schema';
 
 export type OperationObject = openapi.OperationObject & {
   operationId: NonNullable<openapi.OperationObject['operationId']>;
@@ -81,4 +88,38 @@ export type ToHandler<
   Doc = Record<string, never>
 > = Record<Operation['operationId'], ToHandlerFn<Doc, Operation>>;
 
-export declare const pathCoded: <Doc>()
+const isParameter = (
+  x: openapi.ParameterObject | openapi.ReferenceObject
+): x is openapi.ParameterObject =>
+  !Object.prototype.hasOwnProperty.call(x, '$ref');
+
+const parameterToCodec: (
+  param: openapi.ParameterObject
+) => Either<Error, readonly [string, io.Any]> = (param) =>
+  pipe(
+    param.schema,
+    either.fromNullable(new Error()),
+    either.chain((schema) => schemaObjectToCodec(schema)),
+    either.map((codec) => [param.name, codec] as const)
+  );
+
+const pathParametersToCodec: (
+  params: (openapi.ParameterObject | openapi.ReferenceObject)[]
+) => Either<Error, io.Any> = (params) =>
+  pipe(
+    params,
+    array.filter(isParameter),
+    array.filter((p) => p.in === 'path'),
+    either.traverseArray(parameterToCodec),
+    either.map(flow(Object.fromEntries, io.partial))
+  );
+
+export const pathParametersCodec: (
+  operation: openapi.OperationObject
+) => Either<Error, io.Any> = (o) =>
+  pipe(
+    o.parameters,
+    option.fromNullable,
+    option.map(pathParametersToCodec),
+    option.getOrElse(() => either.right(io.unknown as io.Any))
+  );

@@ -12,7 +12,10 @@ test('io-ts and fast-check complements each other', () => {
   fc.assert(
     fc.property(fcSchemaWithValue, ([schemaObject, value]) => {
       const codec = schemaObjectToCodec(schemaObject);
-      expect(codec.decode(value)).toEqual(either.right(value));
+      expect(either.isRight(codec)).toBe(true);
+      if (either.isRight(codec)) {
+        expect(codec.right.decode(value)).toEqual(either.right(value));
+      }
     }),
     { numRuns: 10000 }
   );

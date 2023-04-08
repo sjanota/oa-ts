@@ -52,3 +52,8 @@ export type ResolveReference<
   Doc,
   Ref extends openapi.ReferenceObject
 > = ResolveRef<Doc, SplitRef<Ref['$ref']>>;
+
+export const isRef = (x: unknown): x is openapi.ReferenceObject =>
+  Object.prototype.hasOwnProperty.call(x, '$ref');
+
+  export {HttpMethods: openapi}
