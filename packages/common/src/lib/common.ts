@@ -4,10 +4,10 @@ import * as io from 'io-ts';
 
 export { io, openapi };
 
-export const minimum = (schema: openapi.SchemaObject) =>
+export const minimum = (schema: DeepReadonly<openapi.SchemaObject>) =>
   isNumber(schema.exclusiveMinimum) ? schema.exclusiveMinimum : schema.minimum;
 
-export const maximum = (schema: openapi.SchemaObject) =>
+export const maximum = (schema: DeepReadonly<openapi.SchemaObject>) =>
   isNumber(schema.exclusiveMaximum) ? schema.exclusiveMaximum : schema.maximum;
 
 export const gte = (y: number) => (x: number) => x >= y;
@@ -56,4 +56,11 @@ export type ResolveReference<
 export const isRef = (x: unknown): x is openapi.ReferenceObject =>
   Object.prototype.hasOwnProperty.call(x, '$ref');
 
-  export {HttpMethods: openapi}
+export const tap =
+  <T>(f: (t: T) => unknown) =>
+  (t: T): T => {
+    f(t);
+    return t;
+  };
+
+export const log = <T>() => tap<T>(console.log);

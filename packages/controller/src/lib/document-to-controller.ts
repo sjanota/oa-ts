@@ -1,11 +1,29 @@
-import { DeepReadonly, openapi } from '@oa-ts/common';
-import { array, option, task } from 'fp-ts';
-import { pipe } from 'fp-ts/lib/function';
+import {
+  DeepReadonly,
+  log,
+  openapi,
+  ResolveRef,
+  ResolveReference,
+  SplitRef,
+} from '@oa-ts/common';
+import {
+  array,
+  either,
+  option,
+  readonlyNonEmptyArray,
+  string,
+  task,
+} from 'fp-ts';
+import { pipe, flow } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
 import { Task } from 'fp-ts/lib/Task';
-import { match } from 'path-to-regexp';
-import { operation } from './dsl';
-import { OperationObject, ToHandler } from './operation-object-to-handler';
+import { readonlyArray } from 'io-ts';
+import { match, MatchResult } from 'path-to-regexp';
+import {
+  OperationObject,
+  pathParametersCodec,
+  ToHandler,
+} from './operation-object-to-handler';
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I
@@ -45,13 +63,18 @@ type HttpRequest = {
 };
 type HttpResponse = {
   code: number;
+  body: string;
 };
 
-const matchPath: (req: HttpRequest) => (path: string) => boolean =
+const matchPath: (req: HttpRequest) => (path: string) => Option<MatchResult> =
   (req) => (path) =>
-    !!match(path, {
-      decode: decodeURIComponent,
-    })(req.path);
+    pipe(
+      req.path,
+      match(path, {
+        decode: decodeURIComponent,
+      }),
+      option.fromPredicate((r): r is MatchResult => r !== false)
+    );
 
 const matchMethod: (
   req: HttpRequest
@@ -60,16 +83,43 @@ const matchMethod: (
 ) => Option<DeepReadonly<openapi.OperationObject>> = (req) => (pathItem) =>
   option.fromNullable(pathItem[req.method]);
 
-const handle: (
-  req: HttpRequest
-) => <Doc extends DeepReadonly<openapi.Document>>(
+const resolveRef: <Doc extends DeepReadonly<openapi.Document>>(
+  doc: Doc
+) => <Ref extends string>(ref: Ref) => Option<ResolveRef<Doc, SplitRef<Ref>>> =
+  <Doc extends DeepReadonly<openapi.Document>>(doc: Doc) =>
+  <Ref extends string>(ref: Ref) =>
+    pipe(
+      string.split('/')(ref),
+      readonlyNonEmptyArray.reduce<string, Option<any>>(
+        option.some(doc),
+        (oobj, key) =>
+          key === '#'
+            ? oobj
+            : pipe(
+                oobj,
+                option.chain((obj) => option.fromNullable(obj[key]))
+              )
+      )
+    );
+
+const handle: <Doc extends DeepReadonly<openapi.Document>>(
+  req: HttpRequest,
+  doc: Doc
+) => (
   controller: Controller<Doc>
-) => (operation: DeepReadonly<openapi.OperationObject>) => Task<HttpResponse> =
-  (_req) => (controller) => (operation) => {
+) => (args: {
+  operation: DeepReadonly<openapi.OperationObject>;
+  pathMatch: MatchResult;
+}) => Task<HttpResponse> = (_req, doc) => (controller) => (args) => {
+  return pipe(
+    pathParametersCodec(resolveRef(doc))(args.operation),
+    either.chainW((c) => c.decode(args.pathMatch.params)),
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return controller[operation.operationId ?? '']({});
-  };
+    either.map(controller[args.operation.operationId ?? '']),
+    either.getOrElse((err) => task.of({ code: 500, body: `${err}` }))
+  );
+};
 
 export const router: <Doc extends DeepReadonly<openapi.Document>>(
   doc: Doc
@@ -80,11 +130,19 @@ export const router: <Doc extends DeepReadonly<openapi.Document>>(
     return pipe(
       option.fromNullable(doc.paths),
       option.map((paths) => Object.entries(paths)),
-      option.chain(array.findFirst(([path, _]) => matchPath(req)(path))),
-      option.chain(([_, pathItem]) =>
+      option.chain(
+        array.findFirstMap(([path, pathItem]) =>
+          pipe(
+            path,
+            matchPath(req),
+            option.map((pathMatch) => ({ pathMatch, pathItem }))
+          )
+        )
+      ),
+      option.bind('operation', ({ pathItem }) =>
         pipe(pathItem, option.fromNullable, option.chain(matchMethod(req)))
       ),
-      option.traverse(task.ApplicativeSeq)(handle(req)(controller)),
-      task.map(option.getOrElse(() => ({ code: 404 })))
+      option.traverse(task.ApplicativeSeq)(handle(req, doc)(controller)),
+      task.map(option.getOrElse(() => ({ code: 404, body: 'not found' })))
     );
   };

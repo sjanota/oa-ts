@@ -4,9 +4,10 @@ import {
   SchemaOrReference,
   SchemaToCodec,
 } from '@oa-ts/schema';
-import { array, either, option } from 'fp-ts';
+import { either, option, readonlyArray } from 'fp-ts';
 import { Either } from 'fp-ts/lib/Either';
 import { flow, pipe } from 'fp-ts/lib/function';
+import { Option } from 'fp-ts/lib/Option';
 import { HandlerFn, HandlerResponse } from './handler';
 
 export type OperationObject = openapi.OperationObject & {
@@ -89,37 +90,55 @@ export type ToHandler<
 > = Record<Operation['operationId'], ToHandlerFn<Doc, Operation>>;
 
 const isParameter = (
-  x: openapi.ParameterObject | openapi.ReferenceObject
-): x is openapi.ParameterObject =>
+  x:
+    | DeepReadonly<openapi.ParameterObject>
+    | DeepReadonly<openapi.ReferenceObject>
+): x is DeepReadonly<openapi.ParameterObject> =>
   !Object.prototype.hasOwnProperty.call(x, '$ref');
 
 const parameterToCodec: (
-  param: openapi.ParameterObject
-) => Either<Error, readonly [string, io.Any]> = (param) =>
+  resolveRef: (ref: string) => Option<any>
+) => (
+  param: DeepReadonly<openapi.ParameterObject>
+) => Either<Error, readonly [string, io.Any]> = (resolveRef) => (param) =>
   pipe(
     param.schema,
     either.fromNullable(new Error()),
-    either.chain((schema) => schemaObjectToCodec(schema)),
+    either.chain((schema) => schemaObjectToCodec(schema, resolveRef, true)),
     either.map((codec) => [param.name, codec] as const)
   );
 
 const pathParametersToCodec: (
-  params: (openapi.ParameterObject | openapi.ReferenceObject)[]
-) => Either<Error, io.Any> = (params) =>
+  resolveRef: (ref: string) => Option<any>
+) => (
+  params: readonly (
+    | DeepReadonly<openapi.ParameterObject>
+    | DeepReadonly<openapi.ReferenceObject>
+  )[]
+) => Either<Error, io.Any> = (resolveRef) => (params) =>
   pipe(
     params,
-    array.filter(isParameter),
-    array.filter((p) => p.in === 'path'),
-    either.traverseArray(parameterToCodec),
+    either.traverseArray((p) =>
+      isParameter(p)
+        ? either.right(p)
+        : pipe(
+            resolveRef(p.$ref),
+            either.fromOption(() => new Error(`cannot resolve ref ${p.$ref}`))
+          )
+    ),
+    either.map(readonlyArray.filter((p) => p.in === 'path')),
+    either.chain(either.traverseArray(parameterToCodec(resolveRef))),
     either.map(flow(Object.fromEntries, io.partial))
   );
 
 export const pathParametersCodec: (
-  operation: openapi.OperationObject
-) => Either<Error, io.Any> = (o) =>
+  resolveRef: (ref: string) => Option<openapi.ParameterObject>
+) => (
+  operation: DeepReadonly<openapi.OperationObject>
+) => Either<Error, io.Any> = (resolveRef) => (o) =>
   pipe(
     o.parameters,
     option.fromNullable,
-    option.map(pathParametersToCodec),
+    option.map(pathParametersToCodec(resolveRef)),
     option.getOrElse(() => either.right(io.unknown as io.Any))
   );
