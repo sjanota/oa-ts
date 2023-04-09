@@ -1,9 +1,8 @@
-import { openapi } from '@oa-ts/common';
 import { task } from 'fp-ts';
 import { OpenAPIV3 } from 'openapi-types';
 import { router } from './document-to-controller';
 import { doc } from './example-schema';
-import { HandlerResponses, HandlerResponse } from './handler';
+import { HandlerResponse, HandlerResponses } from './handler';
 
 test('initial', async () => {
   const r = router(doc)({

@@ -1,11 +1,4 @@
-import {
-  DeepReadonly,
-  log,
-  openapi,
-  ResolveRef,
-  ResolveReference,
-  SplitRef,
-} from '@oa-ts/common';
+import { DeepReadonly, openapi, ResolveRef, SplitRef } from '@oa-ts/common';
 import {
   array,
   either,
@@ -14,10 +7,9 @@ import {
   string,
   task,
 } from 'fp-ts';
-import { pipe, flow } from 'fp-ts/lib/function';
+import { pipe } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
 import { Task } from 'fp-ts/lib/Task';
-import { readonlyArray } from 'io-ts';
 import { match, MatchResult } from 'path-to-regexp';
 import {
   OperationObject,
