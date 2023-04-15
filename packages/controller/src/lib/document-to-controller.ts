@@ -1,4 +1,4 @@
-import { PickAndFlatten } from '@oa-ts/common';
+import { log, PickAndFlatten } from '@oa-ts/common';
 import {
   Document,
   HttpMethods,
@@ -16,11 +16,15 @@ import {
   string,
   task,
 } from 'fp-ts';
-import { pipe } from 'fp-ts/lib/function';
+import { pipe, flow } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
 import { Task } from 'fp-ts/lib/Task';
 import { match, MatchResult } from 'path-to-regexp';
-import { pathParametersCodec, ToHandler } from './operation-object-to-handler';
+import {
+  bodyParameterCodec,
+  pathParametersCodec,
+  ToHandler,
+} from './operation-object-to-handler';
 
 export type PathsWithPrefixedMethods<Paths extends PathsObject> = {
   [p in keyof Paths]: p extends string
@@ -50,7 +54,9 @@ export type Controller<Doc extends Document> = ControllerFromFlattenedPaths<
 type HttpRequest = {
   method: HttpMethods;
   path: string;
+  body?: unknown;
 };
+
 type HttpResponse = {
   code: number;
   body: string;
@@ -99,16 +105,29 @@ const handle: <Doc extends Document>(
 ) => (args: {
   operation: OperationObject;
   pathMatch: MatchResult;
-}) => Task<HttpResponse> = (_req, doc) => (controller) => (args) => {
-  return pipe(
-    pathParametersCodec(resolveRef(doc))(args.operation),
-    either.chainW((c) => c.decode(args.pathMatch.params)),
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    either.map(controller[args.operation.operationId ?? '']),
+}) => Task<HttpResponse> = (req, doc) => (controller) => (args) =>
+  pipe(
+    either.Do,
+    either.bind('path', () =>
+      pipe(
+        pathParametersCodec(resolveRef(doc))(args.operation),
+        either.chainW((c) => c.decode(args.pathMatch.params))
+      )
+    ),
+    either.bind('body', () =>
+      pipe(
+        bodyParameterCodec(resolveRef(doc))(args.operation),
+        either.chainW((c) => c(req.body))
+      )
+    ),
+    either.map(({ path, body }) =>
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      controller[args.operation.operationId ?? '']({ ...path, ...body })
+    ),
+    either.mapLeft(flow(JSON.stringify, log('handler error'))),
     either.getOrElse((err) => task.of({ code: 500, body: `${err}` }))
   );
-};
 
 export const router: <Doc extends Document>(
   doc: Doc

@@ -5,4 +5,4 @@ export const tap =
     return t;
   };
 
-export const log = <T>() => tap<T>(console.log);
+export const log = <T>(prefix = '') => tap<T>((v) => console.log(prefix, v));

@@ -86,9 +86,31 @@ const getUserById = dsl.operation('getUserById', {
   },
 } as const);
 
+const createUser = dsl.operation('createUser', {
+  parameters: [
+    {
+      name: 'data',
+      in: 'body',
+      schema: dsl.schemasRef<typeof schemas>()('User'),
+    },
+  ],
+  responses: {
+    200: {
+      $ref: '#/components/responses/UserByIdOK',
+    },
+    404: {
+      summary: 'User not found',
+      $ref: '#/components/responses/Error',
+    },
+  },
+} as const);
+
 const paths = dsl.paths({
   '/api/users/:id': {
     get: getUserById,
+  },
+  '/api/users': {
+    post: createUser,
   },
 } as const);
 
