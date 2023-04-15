@@ -1,10 +1,10 @@
 import { DeepReadonly, ResolveRef, SplitRef } from '@oa-ts/common';
 import {
-  PathItemObject,
   Document,
-  PathsObject,
   HttpMethods,
   OperationObject,
+  PathItemObject,
+  PathsObject,
 } from '@oa-ts/openapi';
 import {
   array,
@@ -20,9 +20,9 @@ import { Task } from 'fp-ts/lib/Task';
 import { match, MatchResult } from 'path-to-regexp';
 import { pathParametersCodec, ToHandler } from './operation-object-to-handler';
 
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I
-) => void
+type UnionToIntersection<U> = (
+  U extends never ? (k: U) => void : never
+) extends (k: infer I) => void
   ? I
   : never;
 type PickAndFlatten<T, K extends keyof T = keyof T> = UnionToIntersection<T[K]>;

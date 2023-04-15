@@ -5,11 +5,12 @@ import {
   PathsObject,
   ComponentsObject,
   SchemaObject,
+  Document,
 } from '@oa-ts/openapi';
 
 export const operation: <
   Id extends string,
-  O extends DeepReadonly<OperationObject>
+  O extends Omit<DeepReadonly<OperationObject>, 'operationId'>
 >(
   operationId: Id,
   o: O

@@ -1,1 +1,1 @@
-export * from './lib/controller';
+export * from './lib/dsl';
