@@ -1,4 +1,11 @@
-import { DeepReadonly, ResolveRef, SplitRef } from '@oa-ts/common';
+import {
+  DeepReadonly,
+  Equal,
+  Expect,
+  PickAndFlatten,
+  ResolveRef,
+  SplitRef,
+} from '@oa-ts/common';
 import {
   Document,
   HttpMethods,
@@ -20,27 +27,20 @@ import { Task } from 'fp-ts/lib/Task';
 import { match, MatchResult } from 'path-to-regexp';
 import { pathParametersCodec, ToHandler } from './operation-object-to-handler';
 
-type UnionToIntersection<U> = (
-  U extends never ? (k: U) => void : never
-) extends (k: infer I) => void
-  ? I
-  : never;
-type PickAndFlatten<T, K extends keyof T = keyof T> = UnionToIntersection<T[K]>;
+export type PathsWithPrefixedMethods<Paths extends DeepReadonly<PathsObject>> =
+  {
+    [p in keyof Paths]: p extends string
+      ? {
+          [m in keyof Paths[p] as m extends string
+            ? `${p}.${m}`
+            : '']: Paths[p][m];
+        }
+      : never;
+  };
 
-type PathsWithPrefixedMethods<Paths extends DeepReadonly<PathsObject>> = {
-  [p in keyof Paths]: p extends string
-    ? {
-        [m in keyof Paths[p] as m extends string
-          ? `${p}.${m}`
-          : '']: Paths[p][m];
-      }
-    : never;
-};
-
-type FlattenedPaths<Doc extends DeepReadonly<Document>> =
-  Doc['paths'] extends DeepReadonly<PathsObject>
-    ? PickAndFlatten<PathsWithPrefixedMethods<Doc['paths']>>
-    : never;
+export type FlattenedPaths<Doc extends Document> = PickAndFlatten<
+  PathsWithPrefixedMethods<Doc['paths']>
+>;
 
 type ControllerFromFlattenedPaths<Doc, Operations> = PickAndFlatten<{
   [k in keyof Operations]: Operations[k] extends DeepReadonly<OperationObject>

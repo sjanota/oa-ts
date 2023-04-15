@@ -1,7 +1,82 @@
 import { Task } from 'fp-ts/lib/Task';
 import { Equal, Expect } from '@oa-ts/common';
-import { Controller } from './document-to-controller';
+import {
+  Controller,
+  FlattenedPaths,
+  PathsWithPrefixedMethods,
+} from './document-to-controller';
 import { doc, Error, Id, User } from './example-schema';
+import { OperationObject } from '@oa-ts/openapi';
+
+type TestPaths = {
+  '/users': {
+    get: OperationObject & {
+      operationId: 'getUsers';
+    };
+    post: OperationObject & {
+      operationId: 'createUser';
+    };
+  };
+  '/users/:id': {
+    get: OperationObject & {
+      operationId: 'getUserById';
+    };
+    put: OperationObject & {
+      operationId: 'updateUser';
+    };
+  };
+};
+
+type _PathsWithPrefixedMethodsTest = Expect<
+  Equal<
+    PathsWithPrefixedMethods<TestPaths>,
+    {
+      '/users': {
+        '/users.get': OperationObject & {
+          operationId: 'getUsers';
+        };
+        '/users.post': OperationObject & {
+          operationId: 'createUser';
+        };
+      };
+      '/users/:id': {
+        '/users/:id.get': OperationObject & {
+          operationId: 'getUserById';
+        };
+        '/users/:id.put': OperationObject & {
+          operationId: 'updateUser';
+        };
+      };
+    }
+  >
+>;
+
+type _FlattenedPathsTest = Expect<
+  Equal<
+    FlattenedPaths<{
+      openapi: '3.1.0';
+      info: {
+        title: string;
+        version: string;
+      };
+      paths: TestPaths;
+    }>,
+    {
+      '/users.get': OperationObject & {
+        operationId: 'getUsers';
+      };
+      '/users.post': OperationObject & {
+        operationId: 'createUser';
+      };
+      '/users/:id.get': OperationObject & {
+        operationId: 'getUserById';
+      };
+      '/users/:id.put': OperationObject & {
+        operationId: 'updateUser';
+      };
+    }
+  >
+>;
 
 declare const controller: Controller<typeof doc>;
 

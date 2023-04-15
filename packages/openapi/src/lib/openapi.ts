@@ -1,3 +1,4 @@
+import { DeepReadonly } from '@oa-ts/common';
 import { OpenAPIV3_1 as openapi, OpenAPIV3 } from 'openapi-types';
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -30,6 +31,8 @@ export type PathsObject<
   P extends NonNull = NonNull
 > = Record<string, PathItemObject<T> & P>;
 
-export type Document<T extends NonNull = NonNull> = openapi.Document<T> & {
-  paths: PathsObject;
-};
+export type Document<T extends NonNull = NonNull> = DeepReadonly<
+  openapi.Document<T> & {
+    paths: PathsObject;
+  }
+>;
