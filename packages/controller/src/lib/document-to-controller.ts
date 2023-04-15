@@ -1,4 +1,11 @@
-import { DeepReadonly, openapi, ResolveRef, SplitRef } from '@oa-ts/common';
+import { DeepReadonly, ResolveRef, SplitRef } from '@oa-ts/common';
+import {
+  PathItemObject,
+  Document,
+  PathsObject,
+  HttpMethods,
+  OperationObject,
+} from '@oa-ts/openapi';
 import {
   array,
   either,
@@ -11,11 +18,7 @@ import { pipe } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
 import { Task } from 'fp-ts/lib/Task';
 import { match, MatchResult } from 'path-to-regexp';
-import {
-  OperationObject,
-  pathParametersCodec,
-  ToHandler,
-} from './operation-object-to-handler';
+import { pathParametersCodec, ToHandler } from './operation-object-to-handler';
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I
@@ -24,19 +27,18 @@ type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   : never;
 type PickAndFlatten<T, K extends keyof T = keyof T> = UnionToIntersection<T[K]>;
 
-type PathsWithPrefixedMethods<Paths extends DeepReadonly<openapi.PathsObject>> =
-  {
-    [p in keyof Paths]: p extends string
-      ? {
-          [m in keyof Paths[p] as m extends string
-            ? `${p}.${m}`
-            : '']: Paths[p][m];
-        }
-      : never;
-  };
+type PathsWithPrefixedMethods<Paths extends DeepReadonly<PathsObject>> = {
+  [p in keyof Paths]: p extends string
+    ? {
+        [m in keyof Paths[p] as m extends string
+          ? `${p}.${m}`
+          : '']: Paths[p][m];
+      }
+    : never;
+};
 
-type FlattenedPaths<Doc extends DeepReadonly<openapi.Document>> =
-  Doc['paths'] extends DeepReadonly<openapi.PathsObject>
+type FlattenedPaths<Doc extends DeepReadonly<Document>> =
+  Doc['paths'] extends DeepReadonly<PathsObject>
     ? PickAndFlatten<PathsWithPrefixedMethods<Doc['paths']>>
     : never;
 
@@ -46,11 +48,11 @@ type ControllerFromFlattenedPaths<Doc, Operations> = PickAndFlatten<{
     : 'dupa';
 }>;
 
-export type Controller<Doc extends DeepReadonly<openapi.Document>> =
+export type Controller<Doc extends DeepReadonly<Document>> =
   ControllerFromFlattenedPaths<Doc, FlattenedPaths<Doc>>;
 
 type HttpRequest = {
-  method: openapi.HttpMethods;
+  method: HttpMethods;
   path: string;
 };
 type HttpResponse = {
@@ -71,14 +73,14 @@ const matchPath: (req: HttpRequest) => (path: string) => Option<MatchResult> =
 const matchMethod: (
   req: HttpRequest
 ) => (
-  pathItem: DeepReadonly<openapi.PathItemObject>
-) => Option<DeepReadonly<openapi.OperationObject>> = (req) => (pathItem) =>
+  pathItem: DeepReadonly<PathItemObject>
+) => Option<DeepReadonly<OperationObject>> = (req) => (pathItem) =>
   option.fromNullable(pathItem[req.method]);
 
-const resolveRef: <Doc extends DeepReadonly<openapi.Document>>(
+const resolveRef: <Doc extends DeepReadonly<Document>>(
   doc: Doc
 ) => <Ref extends string>(ref: Ref) => Option<ResolveRef<Doc, SplitRef<Ref>>> =
-  <Doc extends DeepReadonly<openapi.Document>>(doc: Doc) =>
+  <Doc extends DeepReadonly<Document>>(doc: Doc) =>
   <Ref extends string>(ref: Ref) =>
     pipe(
       string.split('/')(ref),
@@ -94,13 +96,13 @@ const resolveRef: <Doc extends DeepReadonly<openapi.Document>>(
       )
     );
 
-const handle: <Doc extends DeepReadonly<openapi.Document>>(
+const handle: <Doc extends DeepReadonly<Document>>(
   req: HttpRequest,
   doc: Doc
 ) => (
   controller: Controller<Doc>
 ) => (args: {
-  operation: DeepReadonly<openapi.OperationObject>;
+  operation: DeepReadonly<OperationObject>;
   pathMatch: MatchResult;
 }) => Task<HttpResponse> = (_req, doc) => (controller) => (args) => {
   return pipe(
@@ -113,7 +115,7 @@ const handle: <Doc extends DeepReadonly<openapi.Document>>(
   );
 };
 
-export const router: <Doc extends DeepReadonly<openapi.Document>>(
+export const router: <Doc extends DeepReadonly<Document>>(
   doc: Doc
 ) => (
   controller: Controller<Doc>
