@@ -1,5 +1,6 @@
 import { io } from '@oa-ts/common';
 import {
+  isRef,
   MediaTypeObject,
   OperationObject,
   ParameterObject,
@@ -80,10 +81,6 @@ export type ToHandler<
   Doc = Record<string, never>
 > = Record<Operation['operationId'], ToHandlerFn<Doc, Operation>>;
 
-const isParameter = (
-  x: ParameterObject | ReferenceObject
-): x is ParameterObject => !Object.prototype.hasOwnProperty.call(x, '$ref');
-
 const parameterToCodec: (
   resolveRef: (ref: string) => Option<any>
 ) => (param: ParameterObject) => Either<Error, readonly [string, io.Any]> =
@@ -98,17 +95,17 @@ const parameterToCodec: (
 const pathParametersToCodec: (
   resolveRef: (ref: string) => Option<any>
 ) => (
-  params: readonly (ParameterObject | ReferenceObject)[]
+  params: NonNullable<OperationObject['parameters']>
 ) => Either<Error, io.Any> = (resolveRef) => (params) =>
   pipe(
     params,
     either.traverseArray((p) =>
-      isParameter(p)
-        ? either.right(p)
-        : pipe(
+      isRef(p)
+        ? pipe(
             resolveRef(p.$ref),
             either.fromOption(() => new Error(`cannot resolve ref ${p.$ref}`))
           )
+        : either.right(p)
     ),
     either.map(readonlyArray.filter((p) => p.in === 'path')),
     either.chain(either.traverseArray(parameterToCodec(resolveRef))),
