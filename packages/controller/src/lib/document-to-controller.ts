@@ -1,17 +1,12 @@
-import {
-  DeepReadonly,
-  Equal,
-  Expect,
-  PickAndFlatten,
-  ResolveRef,
-  SplitRef,
-} from '@oa-ts/common';
+import { PickAndFlatten } from '@oa-ts/common';
 import {
   Document,
   HttpMethods,
   OperationObject,
   PathItemObject,
   PathsObject,
+  ResolveRef,
+  SplitRef,
 } from '@oa-ts/openapi';
 import {
   array,
@@ -27,29 +22,30 @@ import { Task } from 'fp-ts/lib/Task';
 import { match, MatchResult } from 'path-to-regexp';
 import { pathParametersCodec, ToHandler } from './operation-object-to-handler';
 
-export type PathsWithPrefixedMethods<Paths extends DeepReadonly<PathsObject>> =
-  {
-    [p in keyof Paths]: p extends string
-      ? {
-          [m in keyof Paths[p] as m extends string
-            ? `${p}.${m}`
-            : '']: Paths[p][m];
-        }
-      : never;
-  };
+export type PathsWithPrefixedMethods<Paths extends PathsObject> = {
+  [p in keyof Paths]: p extends string
+    ? {
+        [m in keyof Paths[p] as m extends string
+          ? `${p}.${m}`
+          : '']: Paths[p][m];
+      }
+    : never;
+};
 
 export type FlattenedPaths<Doc extends Document> = PickAndFlatten<
   PathsWithPrefixedMethods<Doc['paths']>
 >;
 
 type ControllerFromFlattenedPaths<Doc, Operations> = PickAndFlatten<{
-  [k in keyof Operations]: Operations[k] extends DeepReadonly<OperationObject>
+  [k in keyof Operations]: Operations[k] extends OperationObject
     ? ToHandler<Operations[k], Doc>
-    : 'dupa';
+    : never;
 }>;
 
-export type Controller<Doc extends DeepReadonly<Document>> =
-  ControllerFromFlattenedPaths<Doc, FlattenedPaths<Doc>>;
+export type Controller<Doc extends Document> = ControllerFromFlattenedPaths<
+  Doc,
+  FlattenedPaths<Doc>
+>;
 
 type HttpRequest = {
   method: HttpMethods;
@@ -72,15 +68,14 @@ const matchPath: (req: HttpRequest) => (path: string) => Option<MatchResult> =
 
 const matchMethod: (
   req: HttpRequest
-) => (
-  pathItem: DeepReadonly<PathItemObject>
-) => Option<DeepReadonly<OperationObject>> = (req) => (pathItem) =>
-  option.fromNullable(pathItem[req.method]);
+) => (pathItem: PathItemObject) => Option<OperationObject> =
+  (req) => (pathItem) =>
+    option.fromNullable(pathItem[req.method]);
 
-const resolveRef: <Doc extends DeepReadonly<Document>>(
+const resolveRef: <Doc extends Document>(
   doc: Doc
 ) => <Ref extends string>(ref: Ref) => Option<ResolveRef<Doc, SplitRef<Ref>>> =
-  <Doc extends DeepReadonly<Document>>(doc: Doc) =>
+  <Doc extends Document>(doc: Doc) =>
   <Ref extends string>(ref: Ref) =>
     pipe(
       string.split('/')(ref),
@@ -96,13 +91,13 @@ const resolveRef: <Doc extends DeepReadonly<Document>>(
       )
     );
 
-const handle: <Doc extends DeepReadonly<Document>>(
+const handle: <Doc extends Document>(
   req: HttpRequest,
   doc: Doc
 ) => (
   controller: Controller<Doc>
 ) => (args: {
-  operation: DeepReadonly<OperationObject>;
+  operation: OperationObject;
   pathMatch: MatchResult;
 }) => Task<HttpResponse> = (_req, doc) => (controller) => (args) => {
   return pipe(
@@ -115,7 +110,7 @@ const handle: <Doc extends DeepReadonly<Document>>(
   );
 };
 
-export const router: <Doc extends DeepReadonly<Document>>(
+export const router: <Doc extends Document>(
   doc: Doc
 ) => (
   controller: Controller<Doc>

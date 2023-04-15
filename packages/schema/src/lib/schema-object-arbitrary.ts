@@ -2,7 +2,7 @@ import fc, { Arbitrary } from 'fast-check';
 import { array } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/function';
 import { OpenAPIV3_1 as openapi } from 'openapi-types';
-import { maximum, minimum } from '@oa-ts/common';
+import { maximum, minimum } from './common';
 
 type Converter<T> = (schema: openapi.SchemaObject) => fc.Arbitrary<T>;
 type Pipe<T> = (schema: openapi.SchemaObject) => PipeFC<T>;

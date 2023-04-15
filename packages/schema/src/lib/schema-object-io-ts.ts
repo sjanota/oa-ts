@@ -1,49 +1,43 @@
+import { io } from '@oa-ts/common';
 import {
-  DeepReadonly,
-  ge,
-  gte,
+  ArraySchemaObject,
   isRef,
-  le,
-  lte,
-  maximum,
-  minimum,
+  ReferenceObject,
   ResolveReference,
-} from '@oa-ts/common';
+  SchemaObject,
+} from '@oa-ts/openapi';
 import { either, option } from 'fp-ts';
 import { Either } from 'fp-ts/lib/Either';
 import { flow, pipe } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/Option';
-import * as io from 'io-ts';
-import { OpenAPIV3_1 as openapi } from 'openapi-types';
 import { NumberFromString } from 'io-ts-types';
+import { minimum, ge, gte, maximum, le, lte } from './common';
 
 type Converter = (
-  schema: DeepReadonly<openapi.SchemaObject>,
+  schema: SchemaObject,
   resolveRef: ResolveRef,
   fromString: boolean
 ) => Either<Error, io.Any>;
-type Pipe<T> = (schema: DeepReadonly<openapi.SchemaObject>) => PipeCodec<T>;
+type Pipe<T> = (schema: SchemaObject) => PipeCodec<T>;
 type PipeCodec<T> = <C extends io.Type<T, any>>(c: C) => io.Any;
-type ResolveRef = (ref: string) => Option<DeepReadonly<openapi.SchemaObject>>;
+type ResolveRef = (ref: string) => Option<SchemaObject>;
 
-export type SchemaOrReference =
-  | DeepReadonly<openapi.SchemaObject>
-  | DeepReadonly<openapi.ReferenceObject>;
+export type SchemaOrReference = SchemaObject | ReferenceObject;
 
 type SchemaObjectToCodec<
   Doc,
-  Schema extends openapi.SchemaObject
+  Schema extends SchemaObject
 > = Schema['type'] extends 'string'
   ? io.StringC
   : Schema['type'] extends 'number'
   ? io.NumberC
   : Schema['type'] extends 'boolean'
   ? io.BooleanC
-  : Schema extends openapi.ArraySchemaObject
+  : Schema extends ArraySchemaObject
   ? io.ArrayC<SchemaToCodec<Schema['items'], Doc>>
   : Schema['type'] extends 'object'
   ? io.PartialC<{
-      [k in keyof Schema['properties']]: Schema['properties'][k] extends openapi.SchemaObject
+      [k in keyof Schema['properties']]: Schema['properties'][k] extends SchemaObject
         ? SchemaToCodec<Schema['properties'][k], Doc>
         : never;
     }>
@@ -52,9 +46,9 @@ type SchemaObjectToCodec<
 export type SchemaToCodec<
   Schema,
   Doc = Record<string, never>
-> = Schema extends openapi.ReferenceObject
+> = Schema extends ReferenceObject
   ? SchemaToCodec<ResolveReference<Doc, Schema>, Doc>
-  : Schema extends openapi.SchemaObject
+  : Schema extends SchemaObject
   ? SchemaObjectToCodec<Doc, Schema>
   : never;
 
@@ -80,7 +74,7 @@ const convertNumber: Converter = (schema, _, fromString) =>
   );
 const convertBoolean: Converter = () => either.right(io.boolean);
 const convertArray = (
-  schema: DeepReadonly<openapi.ArraySchemaObject>,
+  schema: ArraySchemaObject,
   resolveRef: ResolveRef,
   fromString: boolean
 ) => pipe(convert(schema.items, resolveRef, fromString), either.map(io.array));
@@ -99,9 +93,7 @@ const convertObject: Converter = (schema, resolveRef, fromString) =>
   );
 
 const convert = (
-  schema:
-    | DeepReadonly<openapi.SchemaObject>
-    | DeepReadonly<openapi.ReferenceObject>,
+  schema: SchemaObject | ReferenceObject,
   resolveRef: ResolveRef,
   fromString: boolean
 ): Either<Error, io.Any> => {
@@ -130,9 +122,7 @@ const convert = (
 };
 
 export const schemaObjectToCodec = <
-  Schema extends
-    | DeepReadonly<openapi.SchemaObject>
-    | DeepReadonly<openapi.ReferenceObject>
+  Schema extends SchemaObject | ReferenceObject
 >(
   schema: Schema,
   resolveRef: ResolveRef = () => option.none,

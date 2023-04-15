@@ -1,9 +1,10 @@
-import { DeepReadonly, io, ResolveReference } from '@oa-ts/common';
+import { io } from '@oa-ts/common';
 import {
   MediaTypeObject,
   OperationObject,
   ParameterObject,
   ReferenceObject,
+  ResolveReference,
   ResponseObject,
 } from '@oa-ts/openapi';
 import {
@@ -19,7 +20,7 @@ import { HandlerFn, HandlerResponse } from './handler';
 
 type ToSchema<
   Doc,
-  Schema extends DeepReadonly<SchemaOrReference> | undefined
+  Schema extends SchemaOrReference | undefined
 > = Schema extends Record<string, any>
   ? io.TypeOf<SchemaToCodec<Schema, Doc>>
   : never;
@@ -42,10 +43,7 @@ type ToHandlerResponsesSingle<Doc, Code, Response> =
     ? ToHandlerResponsesSingle<Doc, Code, ResolveReference<Doc, Response>>
     : never;
 
-type ToHandlerResponses<
-  Doc,
-  Operation extends DeepReadonly<OperationObject>
-> = {
+type ToHandlerResponses<Doc, Operation extends OperationObject> = {
   [k in keyof Operation['responses']]: ToHandlerResponsesSingle<
     Doc,
     k,
@@ -53,64 +51,54 @@ type ToHandlerResponses<
   >;
 }[keyof Operation['responses']];
 
-type ToHandlerArgSchema<Doc, Parameter> =
-  Parameter extends DeepReadonly<ParameterObject>
-    ? ToSchema<Doc, Parameter['schema']>
-    : Parameter extends DeepReadonly<ReferenceObject>
-    ? ToHandlerArgSchema<Doc, ResolveReference<Doc, Parameter>>
-    : never;
+type ToHandlerArgSchema<Doc, Parameter> = Parameter extends ParameterObject
+  ? ToSchema<Doc, Parameter['schema']>
+  : Parameter extends ReferenceObject
+  ? ToHandlerArgSchema<Doc, ResolveReference<Doc, Parameter>>
+  : never;
 
-type ToHandlerArgName<Doc, Parameter> =
-  Parameter extends DeepReadonly<ParameterObject>
-    ? Parameter['name']
-    : Parameter extends DeepReadonly<ReferenceObject>
-    ? ToHandlerArgName<Doc, ResolveReference<Doc, Parameter>>
-    : never;
+type ToHandlerArgName<Doc, Parameter> = Parameter extends ParameterObject
+  ? Parameter['name']
+  : Parameter extends ReferenceObject
+  ? ToHandlerArgName<Doc, ResolveReference<Doc, Parameter>>
+  : never;
 
-type ToHandlerArgs<Doc, Operation extends DeepReadonly<OperationObject>> = {
+type ToHandlerArgs<Doc, Operation extends OperationObject> = {
   [k in keyof Operation['parameters'] as ToHandlerArgName<
     Doc,
     Operation['parameters'][k]
   >]-?: ToHandlerArgSchema<Doc, Operation['parameters'][k]>;
 };
 
-type ToHandlerFn<
-  Doc,
-  Operation extends DeepReadonly<OperationObject>
-> = HandlerFn<
+type ToHandlerFn<Doc, Operation extends OperationObject> = HandlerFn<
   ToHandlerArgs<Doc, Operation>,
   ToHandlerResponses<Doc, Operation>
 >;
 
 export type ToHandler<
-  Operation extends DeepReadonly<OperationObject>,
+  Operation extends OperationObject,
   Doc = Record<string, never>
 > = Record<Operation['operationId'], ToHandlerFn<Doc, Operation>>;
 
 const isParameter = (
-  x: DeepReadonly<ParameterObject> | DeepReadonly<ReferenceObject>
-): x is DeepReadonly<ParameterObject> =>
-  !Object.prototype.hasOwnProperty.call(x, '$ref');
+  x: ParameterObject | ReferenceObject
+): x is ParameterObject => !Object.prototype.hasOwnProperty.call(x, '$ref');
 
 const parameterToCodec: (
   resolveRef: (ref: string) => Option<any>
-) => (
-  param: DeepReadonly<ParameterObject>
-) => Either<Error, readonly [string, io.Any]> = (resolveRef) => (param) =>
-  pipe(
-    param.schema,
-    either.fromNullable(new Error()),
-    either.chain((schema) => schemaObjectToCodec(schema, resolveRef, true)),
-    either.map((codec) => [param.name, codec] as const)
-  );
+) => (param: ParameterObject) => Either<Error, readonly [string, io.Any]> =
+  (resolveRef) => (param) =>
+    pipe(
+      param.schema,
+      either.fromNullable(new Error()),
+      either.chain((schema) => schemaObjectToCodec(schema, resolveRef, true)),
+      either.map((codec) => [param.name, codec] as const)
+    );
 
 const pathParametersToCodec: (
   resolveRef: (ref: string) => Option<any>
 ) => (
-  params: readonly (
-    | DeepReadonly<ParameterObject>
-    | DeepReadonly<ReferenceObject>
-  )[]
+  params: readonly (ParameterObject | ReferenceObject)[]
 ) => Either<Error, io.Any> = (resolveRef) => (params) =>
   pipe(
     params,
@@ -129,7 +117,7 @@ const pathParametersToCodec: (
 
 export const pathParametersCodec: (
   resolveRef: (ref: string) => Option<ParameterObject>
-) => (operation: DeepReadonly<OperationObject>) => Either<Error, io.Any> =
+) => (operation: OperationObject) => Either<Error, io.Any> =
   (resolveRef) => (o) =>
     pipe(
       o.parameters,

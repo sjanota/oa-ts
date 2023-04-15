@@ -1,5 +1,4 @@
-import { Equal, Expect } from './common';
-import { PickAndFlatten } from './utility-types';
+import { Equal, Expect, PickAndFlatten } from './utility-types';
 
 type _Test = Expect<
   Equal<

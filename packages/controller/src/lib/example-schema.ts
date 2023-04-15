@@ -1,6 +1,6 @@
-import { io } from '@oa-ts/common';
 import * as dsl from './dsl';
 import { SchemaToCodec } from '@oa-ts/schema';
+import { io } from '@oa-ts/common';
 
 type ComponentsSchemaType<
   Components extends { schemas: Record<string, unknown> },
