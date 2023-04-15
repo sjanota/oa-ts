@@ -12,10 +12,14 @@ type NonNull = {};
 export type HttpMethods = openapi.HttpMethods;
 export const HttpMethods = OpenAPIV3.HttpMethods;
 
-export type MediaTypeObject = DeepReadonly<openapi.MediaTypeObject>;
+export type MediaTypeObject = DeepReadonly<openapi.MediaTypeObject> & {
+  schema: NonNullable<openapi.MediaTypeObject['schema']>;
+};
 export type ResponseObject = DeepReadonly<openapi.ResponseObject>;
 export type ReferenceObject = DeepReadonly<openapi.ReferenceObject>;
-export type ParameterObject = DeepReadonly<openapi.ParameterObject>;
+export type ParameterObject = DeepReadonly<openapi.ParameterObject> & {
+  schema: NonNullable<openapi.ParameterObject['schema']>;
+};
 
 export type ComponentsObject = DeepReadonly<openapi.ComponentsObject>;
 export type SchemaObject = DeepReadonly<openapi.SchemaObject>;

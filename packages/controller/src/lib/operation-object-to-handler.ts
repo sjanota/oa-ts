@@ -18,10 +18,10 @@ import { flow, pipe } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
 import { HandlerFn, HandlerResponse } from './handler';
 
-type ToSchema<
-  Doc,
-  Schema extends SchemaOrReference | undefined
-> = Schema extends Record<string, any>
+type ToSchema<Doc, Schema extends SchemaOrReference> = Schema extends Record<
+  string,
+  any
+>
   ? io.TypeOf<SchemaToCodec<Schema, Doc>>
   : never;
 
