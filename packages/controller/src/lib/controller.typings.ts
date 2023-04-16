@@ -1,7 +1,11 @@
 import { Equal, Expect } from '@oa-ts/common';
 import { OperationObject } from '@oa-ts/openapi';
 import { Task } from 'fp-ts/lib/Task';
-import { Controller, FlattenedPaths, PathsWithPrefixedMethods } from './router';
+import {
+  Controller,
+  FlattenedPaths,
+  PathsWithPrefixedMethods,
+} from './controller';
 import { doc, Error, Id, User } from './example-schema';
 
 type TestPaths = {

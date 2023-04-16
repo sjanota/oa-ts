@@ -1,10 +1,8 @@
-import { PickAndFlatten } from '@oa-ts/common';
 import {
   Document,
   HttpMethods,
   OperationObject,
   PathItemObject,
-  PathsObject,
   ResolveRef,
   SplitRef,
 } from '@oa-ts/openapi';
@@ -25,51 +23,12 @@ import { Reader } from 'fp-ts/lib/Reader';
 import { Task } from 'fp-ts/lib/Task';
 import { ValidationError } from 'io-ts';
 import { match, MatchResult } from 'path-to-regexp';
-import {
-  bodyParameterCodec,
-  Decoder,
-  pathParametersCodec,
-  ToHandler,
-} from './operation-object-to-handler';
+import { bodyParameterCodec, Decoder, pathParametersCodec } from './parameters';
 
-export type PathsWithPrefixedMethods<Paths extends PathsObject> = {
-  [p in keyof Paths]: p extends string
-    ? {
-        [m in keyof Paths[p] as m extends string
-          ? `${p}.${m}`
-          : '']: Paths[p][m];
-      }
-    : never;
-};
-
-export type FlattenedPaths<Doc extends Document> = PickAndFlatten<
-  PathsWithPrefixedMethods<Doc['paths']>
->;
-
-type ControllerFromFlattenedPaths<Doc, Operations> = PickAndFlatten<{
-  [k in keyof Operations]: Operations[k] extends OperationObject
-    ? ToHandler<Operations[k], Doc>
-    : never;
-}>;
-
-export type Controller<Doc extends Document> = ControllerFromFlattenedPaths<
-  Doc,
-  FlattenedPaths<Doc>
->;
-
-type HttpRequest = {
-  method: HttpMethods;
-  path: string;
-  body?: unknown;
-};
-
-type HttpResponse = {
-  code: number;
-  body: unknown;
-};
+import { HttpRequest, HttpResponse } from './api';
+import { Controller } from './controller';
 
 type HandleFn = (req: HttpRequest) => Task<HttpResponse>;
-
 type Methods = (method: HttpMethods) => Option<HandleFn>;
 type Route = (path: string) => Option<Methods>;
 

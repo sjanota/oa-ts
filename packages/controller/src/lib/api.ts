@@ -1,3 +1,4 @@
+import { HttpMethods } from '@oa-ts/openapi';
 import { Task } from 'fp-ts/lib/Task';
 
 export type HandlerResponse<Code, Schema> = {
@@ -20,3 +21,14 @@ export type Handler<
   Args extends HandlerArgs,
   Responses extends HandlerResponse<any, any>
 > = { [k in Name]: HandlerFn<Args, Responses> };
+
+export type HttpRequest = {
+  method: HttpMethods;
+  path: string;
+  body?: unknown;
+};
+
+export type HttpResponse = {
+  code: number;
+  body: unknown;
+};

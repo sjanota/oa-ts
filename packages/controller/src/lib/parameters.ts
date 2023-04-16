@@ -1,88 +1,13 @@
 import { io } from '@oa-ts/common';
-import {
-  isRef,
-  MediaTypeObject,
-  OperationObject,
-  ParameterObject,
-  ReferenceObject,
-  ResolveReference,
-  ResponseObject,
-} from '@oa-ts/openapi';
-import {
-  schemaObjectToCodec,
-  SchemaOrReference,
-  SchemaToCodec,
-} from '@oa-ts/schema';
+import { isRef, OperationObject, ParameterObject } from '@oa-ts/openapi';
+import { schemaObjectToCodec } from '@oa-ts/schema';
 import { either, option, readonlyArray } from 'fp-ts';
 import { Either } from 'fp-ts/lib/Either';
 import { flow, pipe } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
 import { ValidationError } from 'io-ts';
-import { HandlerFn, HandlerResponse } from './handler';
 
 export type Decoder<T = any> = (x: unknown) => Either<ValidationError[], T>;
-
-type ToSchema<Doc, Schema extends SchemaOrReference> = Schema extends Record<
-  string,
-  any
->
-  ? io.TypeOf<SchemaToCodec<Schema, Doc>>
-  : never;
-
-type ToHandlerResponseSchema<Doc, Schema> = Schema extends MediaTypeObject
-  ? ToSchema<Doc, Schema['schema']>
-  : 'expected MediaTypeObject';
-
-type ToHandlerResponse<Doc, Code, Rsp extends ResponseObject> = {
-  [k in keyof Rsp['content']]: HandlerResponse<
-    Code,
-    ToHandlerResponseSchema<Doc, Rsp['content'][k]>
-  >;
-}[keyof Rsp['content']];
-
-type ToHandlerResponsesSingle<Doc, Code, Response> =
-  Response extends ResponseObject
-    ? ToHandlerResponse<Doc, Code, Response>
-    : Response extends ReferenceObject
-    ? ToHandlerResponsesSingle<Doc, Code, ResolveReference<Doc, Response>>
-    : never;
-
-type ToHandlerResponses<Doc, Operation extends OperationObject> = {
-  [k in keyof Operation['responses']]: ToHandlerResponsesSingle<
-    Doc,
-    k,
-    Operation['responses'][k]
-  >;
-}[keyof Operation['responses']];
-
-type ToHandlerArgSchema<Doc, Parameter> = Parameter extends ParameterObject
-  ? ToSchema<Doc, Parameter['schema']>
-  : Parameter extends ReferenceObject
-  ? ToHandlerArgSchema<Doc, ResolveReference<Doc, Parameter>>
-  : never;
-
-type ToHandlerArgName<Doc, Parameter> = Parameter extends ParameterObject
-  ? Parameter['name']
-  : Parameter extends ReferenceObject
-  ? ToHandlerArgName<Doc, ResolveReference<Doc, Parameter>>
-  : never;
-
-type ToHandlerArgs<Doc, Operation extends OperationObject> = {
-  [k in keyof Operation['parameters'] as ToHandlerArgName<
-    Doc,
-    Operation['parameters'][k]
-  >]-?: ToHandlerArgSchema<Doc, Operation['parameters'][k]>;
-};
-
-type ToHandlerFn<Doc, Operation extends OperationObject> = HandlerFn<
-  ToHandlerArgs<Doc, Operation>,
-  ToHandlerResponses<Doc, Operation>
->;
-
-export type ToHandler<
-  Operation extends OperationObject,
-  Doc = Record<string, never>
-> = Record<Operation['operationId'], ToHandlerFn<Doc, Operation>>;
 
 const parameterToCodec: (
   resolveRef: (ref: string) => Option<any>,

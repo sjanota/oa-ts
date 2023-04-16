@@ -2,7 +2,7 @@ import { task } from 'fp-ts';
 import { OpenAPIV3 } from 'openapi-types';
 import { router } from './router';
 import { doc, User } from './example-schema';
-import { HandlerResponse, HandlerResponses } from './handler';
+import { HandlerResponse, HandlerResponses } from './api';
 
 describe('initial', () => {
   const r = router(doc, {
