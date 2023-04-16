@@ -25,8 +25,18 @@ import { ValidationError } from 'io-ts';
 import { match, MatchResult } from 'path-to-regexp';
 import { bodyParameterCodec, Decoder, pathParametersCodec } from './parameters';
 
-import { HttpRequest, HttpResponse } from './api';
 import { Controller } from './controller';
+
+export type HttpRequest = {
+  method: HttpMethods;
+  path: string;
+  body?: unknown;
+};
+
+export type HttpResponse = {
+  code: number;
+  body: unknown;
+};
 
 type HandleFn = (req: HttpRequest) => Task<HttpResponse>;
 type Methods = (method: HttpMethods) => Option<HandleFn>;

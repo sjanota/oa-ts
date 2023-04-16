@@ -10,7 +10,22 @@ import {
   ResponseObject,
 } from '@oa-ts/openapi';
 import { SchemaOrReference, SchemaToCodec } from '@oa-ts/schema';
-import { HandlerFn, HandlerResponse } from './api';
+import { Task } from 'fp-ts/lib/Task';
+
+export type HandlerResponse<Code, Schema> = {
+  code: Code;
+  body: Schema;
+};
+
+export type HandlerResponses<Responses extends HandlerResponse<any, any>> =
+  Task<Responses>;
+
+type HandlerArgs = Record<string, unknown>;
+
+type HandlerFn<
+  Args extends HandlerArgs,
+  Responses extends HandlerResponse<any, any>
+> = (args: Args) => HandlerResponses<Responses>;
 
 type ToSchema<Doc, Schema extends SchemaOrReference> = Schema extends Record<
   string,
