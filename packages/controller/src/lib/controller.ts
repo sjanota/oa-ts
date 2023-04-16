@@ -1,12 +1,12 @@
 import { io, PickAndFlatten } from '@oa-ts/common';
 import {
-  PathsObject,
-  OperationObject,
   Document,
+  MediaTypeObject,
+  OperationObject,
   ParameterObject,
+  PathsObject,
   ReferenceObject,
   ResolveReference,
-  MediaTypeObject,
   ResponseObject,
 } from '@oa-ts/openapi';
 import { SchemaOrReference, SchemaToCodec } from '@oa-ts/schema';
@@ -36,7 +36,7 @@ type ToSchema<Doc, Schema extends SchemaOrReference> = Schema extends Record<
 
 type ToHandlerResponseSchema<Doc, Schema> = Schema extends MediaTypeObject
   ? ToSchema<Doc, Schema['schema']>
-  : 'expected MediaTypeObject';
+  : never;
 
 type ToHandlerResponse<Doc, Code, Rsp extends ResponseObject> = {
   [k in keyof Rsp['content']]: HandlerResponse<

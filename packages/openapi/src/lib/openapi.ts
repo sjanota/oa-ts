@@ -35,7 +35,7 @@ export type OperationObject<T extends NonNull = NonNull> = DeepReadonly<
     'operationId' | 'responses' | 'parameters'
   > & {
     operationId: NonNullable<openapi.OperationObject['operationId']>;
-    responses: NonNullable<openapi.OperationObject['responses']>;
+    responses: Record<number, ReferenceObject | ResponseObject>;
     parameters?: (ReferenceObject | ParameterObject)[];
   }
 >;

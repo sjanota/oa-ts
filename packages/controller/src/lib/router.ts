@@ -47,8 +47,11 @@ type Router = (
   method: HttpMethods
 ) => Either<HttpResponse, HandleFn>;
 
-type CompilerInput = { doc: Document; controller: Controller<Document> };
-type Compiler<F> = Reader<CompilerInput, F>;
+export type RouterOptions<Doc extends Document = Document> = {
+  doc: Doc;
+  controller: Controller<Doc>;
+};
+type Compiler<F> = Reader<RouterOptions, F>;
 type ControllerFn = (data: any) => Task<HttpResponse>;
 type MatchFunction = (path: string) => Option<MatchResult>;
 
@@ -197,7 +200,7 @@ const compilePathEntryToRoute: ([pathPattern, pathItem]: [
   );
 
 const compileRoutes: Compiler<readonly Route[]> = pipe(
-  reader.asks(({ doc }: CompilerInput) => pipe(doc.paths, Object.entries)),
+  reader.asks(({ doc }: RouterOptions) => pipe(doc.paths, Object.entries)),
   reader.chain(reader.traverseArray(compilePathEntryToRoute))
 );
 
@@ -236,7 +239,5 @@ const handle: (router: Router) => HandleFn = (router) => (req) =>
   );
 
 export const router: <Doc extends Document>(
-  doc: Doc,
-  controller: Controller<Doc>
-) => HandleFn = (doc, controller) =>
-  pipe(compileRouter({ doc, controller }), handle);
+  opts: RouterOptions<Doc>
+) => HandleFn = flow(compileRouter, handle);
