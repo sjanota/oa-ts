@@ -240,4 +240,4 @@ const handle: (router: Router) => HandleFn = (router) => (req) =>
 
 export const router: <Doc extends Document>(
   opts: RouterOptions<Doc>
-) => HandleFn = flow(compileRouter, handle);
+) => HandleFn = (opts) => pipe(compileRouter(opts as RouterOptions), handle);
