@@ -13,6 +13,7 @@ import {
   either,
   option,
   reader,
+  readonlyArray,
   readonlyNonEmptyArray,
   string,
   task,
@@ -20,6 +21,7 @@ import {
 import { Either } from 'fp-ts/lib/Either';
 import { pipe, flow, identity } from 'fp-ts/lib/function';
 import { Option } from 'fp-ts/lib/Option';
+import { Reader } from 'fp-ts/lib/Reader';
 import { Task } from 'fp-ts/lib/Task';
 import { Match, match, MatchResult } from 'path-to-regexp';
 import {
@@ -143,10 +145,8 @@ type Router = (
   method: HttpMethods
 ) => Either<HttpResponse, HandleFn>;
 
-type Compiler<F> = <Doc extends Document>(
-  doc: Doc,
-  controller: Controller<Doc>
-) => F;
+type CompilerInput = { doc: Document; controller: Controller<Document> };
+type Compiler<F> = Reader<CompilerInput, F>;
 
 // export const router2: <Doc extends Document>(
 //   doc: Doc
@@ -180,9 +180,9 @@ type Compiler<F> = <Doc extends Document>(
 
 type MatchFunction = (path: string) => Option<MatchResult>;
 
-declare const compilePathItemObjectToMethods: Compiler<
-  (pathItem: PathItemObject) => (pathMatch: MatchResult) => Methods
->;
+declare const compilePathItemObjectToMethods: (
+  pathItem: PathItemObject
+) => Compiler<(pathMatch: MatchResult) => Methods>;
 
 const compileMatchFn: (pathPattern: string) => MatchFunction = (pathPattern) =>
   flow(
@@ -192,28 +192,27 @@ const compileMatchFn: (pathPattern: string) => MatchFunction = (pathPattern) =>
     option.fromPredicate((x): x is MatchResult => x !== false)
   );
 
-const compilePathEntryToRoute: Compiler<
-  ([pathPattern, pathItem]: [string, PathItemObject]) => Route
-> =
-  (doc, controller) =>
-  ([pathPattern, pathItem]) => {
-    const matchFn = compileMatchFn(pathPattern);
-    const methodsFn = compilePathItemObjectToMethods(doc, controller)(pathItem);
-    return flow(matchFn, option.map(methodsFn));
-  };
-
-const compileRoutes: Compiler<Route[]> = (doc, controller) =>
+const compilePathEntryToRoute: ([pathPattern, pathItem]: [
+  string,
+  PathItemObject
+]) => Compiler<Route> = ([pathPattern, pathItem]) =>
   pipe(
-    doc.paths,
-    Object.entries,
-    array.map(compilePathEntryToRoute(doc, controller))
+    reader.Do,
+    reader.bind('matchFn', () => () => compileMatchFn(pathPattern)),
+    reader.bind('methodsFn', () => compilePathItemObjectToMethods(pathItem)),
+    reader.map(({ matchFn, methodsFn }) => flow(matchFn, option.map(methodsFn)))
   );
+
+const compileRoutes: Compiler<readonly Route[]> = pipe(
+  reader.asks(({ doc }: CompilerInput) => pipe(doc.paths, Object.entries)),
+  reader.chain(reader.traverseArray(compilePathEntryToRoute))
+);
 
 const getMatchingRoute: (
   path: string
-) => (routes: Route[]) => Either<HttpResponse, Methods> = (path) =>
+) => (routes: readonly Route[]) => Either<HttpResponse, Methods> = (path) =>
   flow(
-    array.findFirstMap((route) => route(path)),
+    readonlyArray.findFirstMap((route) => route(path)),
     either.fromOption(() => rsp(404, `Path ${path} not found`))
   );
 
@@ -226,13 +225,15 @@ const getMatchingHandle: (
       either.fromNullable(rsp(405, `Method ${method} not supported`))
     );
 
-const pickRoute: (routes: Route[]) => Router = (routes) => (path, method) =>
-  pipe(routes, getMatchingRoute(path), either.chain(getMatchingHandle(method)));
+const pickRoute: (routes: readonly Route[]) => Router =
+  (routes) => (path, method) =>
+    pipe(
+      routes,
+      getMatchingRoute(path),
+      either.chain(getMatchingHandle(method))
+    );
 
-const compileRouter: <Doc extends Document>(
-  doc: Doc,
-  controller: Controller<Doc>
-) => Router = flow(compileRoutes, pickRoute);
+const compileRouter: Compiler<Router> = flow(compileRoutes, pickRoute);
 
 const handle: (router: Router) => HandleFn = (router) => (req) =>
   pipe(
@@ -244,4 +245,5 @@ const handle: (router: Router) => HandleFn = (router) => (req) =>
 export const router: <Doc extends Document>(
   doc: Doc,
   controller: Controller<Doc>
-) => HandleFn = flow(compileRouter, handle);
+) => HandleFn = (doc, controller) =>
+  pipe(compileRouter({ doc, controller }), handle);
