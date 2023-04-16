@@ -19,14 +19,14 @@ Visit the [Nx Documentation](https://nx.dev) to learn more.
 ## TODO
 
 - [x] Compile router instead or calculatign it each time
-- [] DSL
+- [x] binding to express
 - [] Decode query
 - [] Decode headers
+- [] DSL
 - [] Encode response
 - [x] Decode body
 - [] Response headers
 - [] Required properties
-- [] binding to express
 - [] Authentication
 - [] Middlewares
 - [] path-level parameters

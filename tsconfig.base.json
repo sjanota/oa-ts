@@ -19,6 +19,7 @@
       "@oa-ts/common": ["packages/common/src/index.ts"],
       "@oa-ts/controller": ["packages/controller/src/index.ts"],
       "@oa-ts/dsl": ["packages/dsl/src/index.ts"],
+      "@oa-ts/express": ["packages/express/src/index.ts"],
       "@oa-ts/openapi": ["packages/openapi/src/index.ts"],
       "@oa-ts/schema": ["packages/schema/src/index.ts"]
     }
