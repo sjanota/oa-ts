@@ -82,7 +82,7 @@ const bodyParameterToCodec: (
             either.map((a) => ({ [name]: a }))
           )
         ),
-        option.getOrElse(() => io.undefined.decode as Decoder)
+        option.getOrElseW(() => () => either.right({}))
       )
     )
   );
