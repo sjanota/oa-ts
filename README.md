@@ -18,14 +18,15 @@ Visit the [Nx Documentation](https://nx.dev) to learn more.
 
 ## TODO
 
+- [] Compile router instead or calculatign it each time
 - [] Required properties
 - [] Encode response
-- [] Decode body
+- [x] Decode body
 - [] Decode query
-- [] Compile router instead or calculatign it each time
 - [] Decode headers
 - [] Response headers
 - [] Authentication
 - [] Middlewares
-- [] Better schema typing with no undefined where they doesn't make sense
+- [x] Better schema typing with no undefined where they doesn't make sense
 - [] Better controller internals typing
+- [] path-level parameters
