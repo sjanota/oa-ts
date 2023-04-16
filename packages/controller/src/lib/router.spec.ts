@@ -1,11 +1,11 @@
 import { task } from 'fp-ts';
 import { OpenAPIV3 } from 'openapi-types';
-import { router } from './document-to-controller';
+import { router } from './router';
 import { doc, User } from './example-schema';
 import { HandlerResponse, HandlerResponses } from './handler';
 
 describe('initial', () => {
-  const r = router(doc)({
+  const r = router(doc, {
     getUserById: function (args: {
       readonly id: number;
     }): HandlerResponses<

@@ -20,7 +20,7 @@ import { Option } from 'fp-ts/lib/Option';
 import { ValidationError } from 'io-ts';
 import { HandlerFn, HandlerResponse } from './handler';
 
-type Decoder = (x: unknown) => Either<ValidationError[], any>;
+export type Decoder<T = any> = (x: unknown) => Either<ValidationError[], T>;
 
 type ToSchema<Doc, Schema extends SchemaOrReference> = Schema extends Record<
   string,
@@ -102,7 +102,7 @@ const pathParametersToCodec: (
   resolveRef: (ref: string) => Option<any>
 ) => (
   params: NonNullable<OperationObject['parameters']>
-) => Either<Error, io.Any> = (resolveRef) => (params) =>
+) => Either<Error, Decoder> = (resolveRef) => (params) =>
   pipe(
     params,
     either.traverseArray((p) =>
@@ -115,18 +115,19 @@ const pathParametersToCodec: (
     ),
     either.map(readonlyArray.filter((p) => p.in === 'path')),
     either.chain(either.traverseArray(parameterToCodec(resolveRef, true))),
-    either.map(flow(Object.fromEntries, io.partial))
+    either.map(flow(Object.fromEntries, io.partial)),
+    either.map((c) => c.decode)
   );
 
 export const pathParametersCodec: (
   resolveRef: (ref: string) => Option<ParameterObject>
-) => (operation: OperationObject) => Either<Error, io.Any> =
+) => (operation: OperationObject) => Either<Error, Decoder> =
   (resolveRef) => (o) =>
     pipe(
       o.parameters,
       option.fromNullable,
       option.map(pathParametersToCodec(resolveRef)),
-      option.getOrElse(() => either.right(io.unknown as io.Any))
+      option.getOrElse(() => either.right(io.unknown.decode))
     );
 
 const bodyParameterToCodec: (
