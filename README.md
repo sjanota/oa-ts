@@ -18,7 +18,7 @@ Visit the [Nx Documentation](https://nx.dev) to learn more.
 
 ## TODO
 
-- [] Compile router instead or calculatign it each time
+- [x] Compile router instead or calculatign it each time
 - [] Required properties
 - [] Encode response
 - [x] Decode body
@@ -27,6 +27,6 @@ Visit the [Nx Documentation](https://nx.dev) to learn more.
 - [] Response headers
 - [] Authentication
 - [] Middlewares
-- [x] Better schema typing with no undefined where they doesn't make sense
-- [] Better controller internals typing
 - [] path-level parameters
+- [x] Better schema typing with no undefined where they doesn't make sense
+- [] Better controller internals typing (no cast in getControllerFnForOperation)
